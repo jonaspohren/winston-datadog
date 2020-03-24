@@ -1,7 +1,7 @@
 # winston-datadog
 
 ```
-yarn add https://github.com/jonaspohren/winston-datadog#v1.0.0
+yarn add https://github.com/jonaspohren/winston-datadog#v1.1.0
 ```
 
 ```javascript

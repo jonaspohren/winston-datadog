@@ -5,8 +5,8 @@ class WinstonDatadog extends Transport {
   constructor(opts) {
     super(opts);
 
-    this.bulk = [];
-    this.timer = null;
+    this.logs = [];
+    this.sendTimer = null;
     this.options = {
       hostname: 'http-intake.logs.datadoghq.com',
       port: 443,
@@ -23,21 +23,35 @@ class WinstonDatadog extends Transport {
       this.emit('logged', info);
     });
 
-    this.bulk.push(info);
+    while (this.logs.length >= 1000) {
+      this.logs.shift();
+    }
 
-    if (this.timer === null) {
-      this.timer = setTimeout(() => {
-        const request = https.request(this.options);
+    this.logs.push(info);
 
-        request.write(JSON.stringify(this.bulk));
-        request.end();
-
-        this.bulk = [];
-        this.timer = null;
+    if (this.sendTimer === null) {
+      this.sendTimer = setTimeout(() => {
+        this.sendLogs();
       }, 1000);
     }
 
     callback();
+  }
+
+  sendLogs() {
+    const request = https.request(this.options, (response) => {
+      if (response.statusCode === 200) {
+        this.logs = [];
+        this.sendTimer = null;
+      } else {
+        this.sendTimer = setTimeout(() => {
+          this.sendLogs();
+        }, 10000);
+      }
+    });
+
+    request.write(JSON.stringify(this.logs));
+    request.end();
   }
 }
 
